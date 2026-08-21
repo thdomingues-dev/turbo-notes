@@ -1,0 +1,262 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/api
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: turbo_ai
+          POSTGRES_PASSWORD: turbo_ai
+          POSTGRES_USER: turbo_ai
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U turbo_ai -d turbo_ai"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+    env:
+      DATABASE_URL: postgresql://turbo_ai:turbo_ai@127.0.0.1:5432/turbo_ai
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version-file: apps/api/.python-version
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.10.6"
+          enable-cache: true
+          cache-dependency-glob: apps/api/uv.lock
+
+      - name: Install dependencies
+        run: make -C ../.. api-bootstrap
+
+      - name: Migrate database
+        run: make -C ../.. api-migrate
+
+      - name: Run canonical backend checks
+        run: make -C ../.. api-check
+
+      - name: Build backend package and container
+        run: |
+          uv build --out-dir /tmp/turbo-ai-build
+          docker build --tag turbo-ai-api:ci .
+
+      - name: Audit production dependencies
+        run: >-
+          uv export --frozen --no-dev --no-emit-project --format requirements-txt |
+          uvx pip-audit==2.10.1 --strict --disable-pip -r /dev/stdin
+
+      - name: Smoke test production container
+        env:
+          DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+          DJANGO_SECRET_KEY: deployment-check-only-8d4f5c7b2a9e6d1f3c0b7a4e9d2f6c8b1a5e7d9c
+          DJANGO_SECURE_SSL_REDIRECT: "false"
+          DJANGO_SETTINGS_MODULE: config.settings.production
+          SMOKE_DATABASE_URL: postgresql://turbo_ai:turbo_ai@host.docker.internal:5432/turbo_ai
+        run: |
+          container_name=turbo-ai-api-ci-smoke
+          cleanup() {
+            smoke_status=$?
+            trap - EXIT
+            if [ "$smoke_status" -ne 0 ]; then
+              docker logs "$container_name" || true
+            fi
+            docker rm --force "$container_name" >/dev/null 2>&1 || true
+            exit "$smoke_status"
+          }
+          trap cleanup EXIT
+
+          docker run --detach \
+            --name "$container_name" \
+            --add-host host.docker.internal:host-gateway \
+            --publish 127.0.0.1:8000:8000 \
+            --env "DATABASE_URL=$SMOKE_DATABASE_URL" \
+            --env DJANGO_ALLOWED_HOSTS \
+            --env DJANGO_SECRET_KEY \
+            --env DJANGO_SECURE_SSL_REDIRECT \
+            --env DJANGO_SETTINGS_MODULE \
+            turbo-ai-api:ci
+
+          uv run python - <<'PY'
+          import json
+          import time
+          import urllib.error
+          import urllib.request
+
+          base_url = "http://127.0.0.1:8000"
+          deadline = time.monotonic() + 30
+          while True:
+              try:
+                  with urllib.request.urlopen(f"{base_url}/health/live/", timeout=2) as response:
+                      if response.status == 200:
+                          break
+              except (OSError, urllib.error.URLError):
+                  pass
+              if time.monotonic() >= deadline:
+                  raise TimeoutError("production container did not become live within 30 seconds")
+              time.sleep(1)
+
+          for path, expected in (
+              ("/health/live/", {"status": "ok"}),
+              ("/health/ready/", {"status": "ok"}),
+          ):
+              with urllib.request.urlopen(f"{base_url}{path}", timeout=2) as response:
+                  assert response.status == 200
+                  assert json.load(response) == expected
+
+          with urllib.request.urlopen(f"{base_url}/api/v1/auth/session/", timeout=2) as response:
+              session = json.load(response)
+              assert response.status == 200
+              assert session["authenticated"] is False
+              assert session["user"] is None
+              assert session["csrf_token"]
+          PY
+
+          docker stop --timeout 10 "$container_name" >/dev/null
+          test "$(docker inspect --format '{{.State.ExitCode}}' "$container_name")" = "0"
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/web
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          package_json_file: apps/web/package.json
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: apps/web/.nvmrc
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: make -C ../.. web-bootstrap
+
+      - name: Run canonical frontend checks
+        run: make -C ../.. web-check
+
+      - name: Audit dependencies
+        run: pnpm audit --audit-level high
+
+  browser:
+    name: Browser and full stack
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: apps/web
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: turbo_ai
+          POSTGRES_PASSWORD: turbo_ai
+          POSTGRES_USER: turbo_ai
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U turbo_ai -d turbo_ai"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+    env:
+      CI: true
+      DATABASE_URL: postgresql://turbo_ai:turbo_ai@127.0.0.1:5432/turbo_ai
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version-file: apps/api/.python-version
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.10.6"
+          enable-cache: true
+          cache-dependency-glob: apps/api/uv.lock
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          package_json_file: apps/web/package.json
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: apps/web/.nvmrc
+          cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
+
+      - name: Install backend dependencies
+        working-directory: apps/api
+        run: uv sync --frozen --no-dev
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run responsive browser suite
+        run: pnpm test:e2e
+
+      - name: Run full-stack browser suite
+        run: pnpm test:fullstack
+
+      - name: Upload browser failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: browser-failure-artifacts
+          path: |
+            apps/web/playwright-report/
+            apps/web/test-results/
+          if-no-files-found: ignore
+          retention-days: 7

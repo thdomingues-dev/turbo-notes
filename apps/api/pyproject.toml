@@ -1,0 +1,85 @@
+[project]
+name = "turbo-ai-api"
+version = "0.1.0"
+description = "Django REST API for the Turbo AI notes application"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "argon2-cffi>=23.1,<26",
+  "django>=5.2,<5.3",
+  "django-environ>=0.12,<1",
+  "djangorestframework>=3.17,<3.18",
+  "drf-spectacular>=0.28,<1",
+  "gunicorn>=23,<24",
+  "psycopg[binary]>=3.2,<4",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3,<10",
+  "pytest-cov>=6,<8",
+  "pytest-django>=4.11,<5",
+  "ruff>=0.11,<1",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+addopts = "--strict-markers --strict-config --reuse-db"
+python_files = ["test_*.py"]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["src/accounts", "src/config", "src/notes"]
+omit = ["*/migrations/*", "*/asgi.py", "*/wsgi.py"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+skip_covered = true
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+  "B",
+  "C4",
+  "DJ",
+  "E",
+  "F",
+  "I",
+  "N",
+  "PERF",
+  "PIE",
+  "PT",
+  "RUF",
+  "S",
+  "SIM",
+  "UP",
+  "W",
+]
+ignore = [
+  "DJ001",
+  "RUF012",
+  "S101",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"src/config/settings/*.py" = ["F403", "F405"]
+"src/config/settings/production.py" = ["S105"]
+"src/config/settings/test.py" = ["S105"]
+"src/**/migrations/*.py" = ["E501", "N806"]
+"tests/**/*.py" = ["S105", "S106"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/accounts", "src/config", "src/notes"]

@@ -1,0 +1,832 @@
+openapi: 3.0.3
+info:
+  title: Turbo AI Notes API
+  version: 1.0.0
+  description: Session-authenticated API for accounts, categories, and autosaved notes.
+paths:
+  /api/v1/auth/login/:
+    post:
+      operationId: auth_login_create
+      parameters:
+      - in: header
+        name: X-CSRFToken
+        schema:
+          type: string
+        description: Token bootstrapped by GET /api/v1/auth/session/.
+        required: true
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Invalid request
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        '413':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request body exceeds the configured limit
+        '415':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Only application/json is accepted
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unexpected server error
+        '406':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: The requested response representation is not available
+  /api/v1/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      parameters:
+      - in: header
+        name: X-CSRFToken
+        schema:
+          type: string
+        description: Token bootstrapped by GET /api/v1/auth/session/.
+        required: true
+      tags:
+      - auth
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unexpected server error
+        '406':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: The requested response representation is not available
+  /api/v1/auth/session/:
+    get:
+      operationId: auth_session_retrieve
+      tags:
+      - auth
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+          description: ''
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unexpected server error
+        '406':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: The requested response representation is not available
+  /api/v1/auth/signup/:
+    post:
+      operationId: auth_signup_create
+      parameters:
+      - in: header
+        name: X-CSRFToken
+        schema:
+          type: string
+        description: Token bootstrapped by GET /api/v1/auth/session/.
+        required: true
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Invalid request
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        '413':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request body exceeds the configured limit
+        '415':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Only application/json is accepted
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unexpected server error
+        '406':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: The requested response representation is not available
+  /api/v1/categories/:
+    get:
+      operationId: categories_list
+      tags:
+      - categories
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unexpected server error
+        '406':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: The requested response representation is not available
+  /api/v1/notes/:
+    get:
+      operationId: notes_list
+      parameters:
+      - in: query
+        name: category
+        schema:
+          enum:
+          - random-thoughts
+          - school
+          - personal
+          - drama
+          type: string
+          minLength: 1
+        description: |-
+          * `random-thoughts` - Random Thoughts
+          * `school` - School
+          * `personal` - Personal
+          * `drama` - Drama
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 1024
+        description: Opaque pagination cursor from a previous page link.
+      tags:
+      - notes
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNoteListList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Invalid request
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unexpected server error
+        '406':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: The requested response representation is not available
+    post:
+      operationId: notes_create
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+          format: uuid
+        description: Client-generated UUID. Reusing it safely replays the original
+          creation.
+      - in: header
+        name: X-CSRFToken
+        schema:
+          type: string
+        description: Token bootstrapped by GET /api/v1/auth/session/.
+        required: true
+      tags:
+      - notes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteCreateRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          headers:
+            Location:
+              schema:
+                type: string
+              description: Relative URL of the created note.
+            Idempotency-Replayed:
+              schema:
+                type: boolean
+              description: Present and true when an earlier creation was replayed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoteDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Invalid request
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request conflict
+        '413':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request body exceeds the configured limit
+        '415':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Only application/json is accepted
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unexpected server error
+        '406':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: The requested response representation is not available
+  /api/v1/notes/{id}/:
+    get:
+      operationId: notes_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - notes
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoteDetail'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Not found
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unexpected server error
+        '406':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: The requested response representation is not available
+    patch:
+      operationId: notes_partial_update
+      parameters:
+      - in: header
+        name: X-CSRFToken
+        schema:
+          type: string
+        description: Token bootstrapped by GET /api/v1/auth/session/.
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - notes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedNotePatchRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NoteDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Invalid request
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Not found
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevisionConflictError'
+          description: Revision conflict
+        '413':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Request body exceeds the configured limit
+        '415':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Only application/json is accepted
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unexpected server error
+        '406':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: The requested response representation is not available
+    delete:
+      operationId: notes_destroy
+      parameters:
+      - in: header
+        name: X-CSRFToken
+        schema:
+          type: string
+        description: Token bootstrapped by GET /api/v1/auth/session/.
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - notes
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Not found
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Unexpected server error
+        '406':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: The requested response representation is not available
+components:
+  schemas:
+    Category:
+      type: object
+      properties:
+        key:
+          allOf:
+          - $ref: '#/components/schemas/CategoryKeyEnum'
+          readOnly: true
+        note_count:
+          type: integer
+          readOnly: true
+      required:
+      - key
+      - note_count
+    CategoryKeyEnum:
+      enum:
+      - random-thoughts
+      - school
+      - personal
+      - drama
+      type: string
+      description: |-
+        * `random-thoughts` - Random Thoughts
+        * `school` - School
+        * `personal` - Personal
+        * `drama` - Drama
+    CodeEnum:
+      enum:
+      - revision_conflict
+      type: string
+      description: '* `revision_conflict` - revision_conflict'
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          readOnly: true
+        detail:
+          type: string
+          readOnly: true
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+      required:
+      - code
+      - detail
+    LoginRequest:
+      type: object
+      description: Reject undeclared request fields instead of silently discarding
+        them.
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 128
+      required:
+      - email
+      - password
+      additionalProperties: false
+    NoteCreateRequest:
+      type: object
+      description: Reject undeclared request fields instead of silently discarding
+        them.
+      properties:
+        category_key:
+          allOf:
+          - $ref: '#/components/schemas/CategoryKeyEnum'
+          description: |-
+            Defaults to `random-thoughts` when omitted.
+
+            * `random-thoughts` - Random Thoughts
+            * `school` - School
+            * `personal` - Personal
+            * `drama` - Drama
+      additionalProperties: false
+    NoteDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        category_key:
+          allOf:
+          - $ref: '#/components/schemas/CategoryKeyEnum'
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        content:
+          type: string
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_edited_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - category_key
+      - content
+      - created_at
+      - id
+      - last_edited_at
+      - revision
+      - title
+    NoteList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        content_preview:
+          type: string
+          readOnly: true
+        category_key:
+          allOf:
+          - $ref: '#/components/schemas/CategoryKeyEnum'
+          readOnly: true
+        last_edited_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - category_key
+      - content_preview
+      - id
+      - last_edited_at
+      - title
+    PaginatedNoteListList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/NoteList'
+    PatchedNotePatchRequest:
+      type: object
+      description: Reject undeclared request fields instead of silently discarding
+        them.
+      properties:
+        revision:
+          type: integer
+          minimum: 0
+          writeOnly: true
+        category_key:
+          $ref: '#/components/schemas/CategoryKeyEnum'
+        title:
+          type: string
+          maxLength: 200
+        content:
+          type: string
+          maxLength: 100000
+      additionalProperties: false
+      required:
+      - revision
+      minProperties: 2
+    RevisionConflictCurrent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        revision:
+          type: integer
+          minimum: 0
+          readOnly: true
+        last_edited_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - id
+      - last_edited_at
+      - revision
+    RevisionConflictError:
+      type: object
+      properties:
+        code:
+          allOf:
+          - $ref: '#/components/schemas/CodeEnum'
+          readOnly: true
+        detail:
+          type: string
+          readOnly: true
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        current:
+          allOf:
+          - $ref: '#/components/schemas/RevisionConflictCurrent'
+          readOnly: true
+      required:
+      - code
+      - current
+      - detail
+    Session:
+      type: object
+      properties:
+        authenticated:
+          type: boolean
+          readOnly: true
+        user:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+          nullable: true
+        csrf_token:
+          type: string
+          readOnly: true
+      required:
+      - authenticated
+      - csrf_token
+      - user
+    SignupRequest:
+      type: object
+      description: Reject undeclared request fields instead of silently discarding
+        them.
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 128
+      required:
+      - email
+      - password
+      additionalProperties: false
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+      required:
+      - email
+      - id
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid

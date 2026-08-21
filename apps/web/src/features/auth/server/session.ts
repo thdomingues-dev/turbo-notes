@@ -8,7 +8,7 @@ import type {
   Session,
   SessionUser,
 } from "../model/types";
-import { apiInternalBaseUrl } from "@/shared/config/api.server";
+import { apiServerBaseUrl } from "@/shared/config/api.server";
 
 function isSessionUser(value: unknown): value is SessionUser {
   return (
@@ -32,7 +32,7 @@ function isSessionPayload(payload: unknown): payload is Session {
 
 export async function getRequestSession(): Promise<Session> {
   const cookie = (await headers()).get("cookie");
-  const response = await fetch(`${apiInternalBaseUrl()}/api/v1/auth/session/`, {
+  const response = await fetch(`${apiServerBaseUrl()}/api/v1/auth/session/`, {
     cache: "no-store",
     headers: {
       Accept: "application/json",

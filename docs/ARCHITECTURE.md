@@ -52,11 +52,11 @@ All write serializers reject undeclared fields at runtime. List filters and curs
 
 ## Operations
 
-`/health/live/` checks only that the process can respond. `/health/ready/` performs a lightweight `SELECT 1`; both probes accept safe methods only and cannot be cached. Compose gates API startup on a successful migration job, while production migrations remain a separate release step. Unexpected API failures return a generic safe body, oversized JSON returns a typed `413`, and malformed API routes retain the JSON error contract. A real production deployment would add a scrubbed error tracker such as Sentry.
+`/health/live/` checks only that the API process can respond. `/health/ready/` performs a lightweight `SELECT 1`; both API probes accept safe methods only and cannot be cached. The web service exposes `/health` as a local process probe so its rollout does not depend on API availability. Compose gates API startup on a successful migration job. The free Render Blueprint runs migrations during API startup because pre-deploy commands require a paid service; paid production deployments keep migrations as a separate release step. Unexpected API failures return a generic safe body, oversized JSON returns a typed `413`, and malformed API routes retain the JSON error contract. A real production deployment would add a scrubbed error tracker such as Sentry.
 
 Database checks preserve the fixed category catalog, the content bound, and creation-receipt uniqueness even when writes bypass the HTTP serializers. Interactive API docs are enabled for local development with version-pinned assets and disabled under production settings.
 
-The container defaults to one synchronous Gunicorn worker and is intended to scale horizontally. `GUNICORN_CMD_ARGS` is the deployment override for worker count/class and timeout policy; size it from measured CPU, memory, and request latency rather than silently relying on Gunicorn defaults. Run migrations as a separate release step before making new instances ready.
+The container defaults to one synchronous Gunicorn worker and is intended to scale horizontally. `GUNICORN_CMD_ARGS` is the deployment override for worker count/class and timeout policy; size it from measured CPU, memory, and request latency rather than silently relying on Gunicorn defaults. Except for the documented free-tier startup path, run migrations as a separate release step before making new instances ready.
 
 ## Quality strategy
 

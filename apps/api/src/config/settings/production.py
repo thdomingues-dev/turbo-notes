@@ -12,9 +12,9 @@ if render_external_hostname:
     if render_origin not in CSRF_TRUSTED_ORIGINS:
         CSRF_TRUSTED_ORIGINS.append(render_origin)
 
-if len(SECRET_KEY) < 50 or len(set(SECRET_KEY)) < 5:
+if len(SECRET_KEY) < 44 or len(set(SECRET_KEY)) < 5:
     raise ImproperlyConfigured(
-        "DJANGO_SECRET_KEY must contain at least 50 characters and 5 unique characters "
+        "DJANGO_SECRET_KEY must contain at least 44 characters and 5 unique characters "
         "in production."
     )
 if not ALLOWED_HOSTS:

@@ -99,17 +99,17 @@ GitHub Actions runs the backend, frontend, responsive browser, and real full-sta
 
 ## Deploy to Render
 
-The committed `render.yaml` Blueprint provisions two free web services and a free PostgreSQL database in the same Render region. The Next.js service forwards same-origin `/api/v1` requests to Django over Render's private network, while Django derives its allowed host and trusted HTTPS origin from Render's generated hostname.
+The committed `render.yaml` Blueprint provisions two free web services and a free PostgreSQL database in the same Render region. The Next.js service forwards same-origin `/api/v1` requests to Django through the API's Render-managed HTTPS URL, because free web services cannot receive private-network traffic. The Blueprint wires the public web origin into Django's CSRF allowlist.
 
-Create a new Blueprint in Render, connect this repository, and apply `render.yaml`. Render generates the Django secret and database credentials automatically. On the free tier, the API runs migrations during service startup because separate pre-deploy commands require a paid service plan.
+Create a new Blueprint in Render, connect this repository, and apply `render.yaml`. Render generates the Django secret and database credentials automatically. On the free tier, the API runs migrations during service startup because separate pre-deploy commands require a paid service plan. Free web services spin down when idle, and free Render Postgres databases expire after 30 days.
 
 For a production workload, select paid service and database plans, move migrations to `preDeployCommand`, configure backups and monitoring, and review scaling from measured traffic.
 
 ## Production boundary
 
-Production settings fail closed unless a strong secret, explicit allowed hosts, and a PostgreSQL database URL are supplied. Run migrations as a separate release step before starting Gunicorn. Interactive Swagger documentation is local-only; the committed OpenAPI document remains the reviewable contract.
+Production settings fail closed unless a strong secret, explicit allowed hosts, and a PostgreSQL database URL are supplied. Paid production deployments should run migrations as a separate release step before starting Gunicorn; the free Render Blueprint documents its startup-time exception. Interactive Swagger documentation is local-only; the committed OpenAPI document remains the reviewable contract.
 
-When TLS terminates at a reverse proxy, set `DJANGO_TRUST_X_FORWARDED_PROTO=true` only after that proxy is configured to strip client-supplied forwarding headers, set `X-Forwarded-Proto`, and keep Django off the public network. Otherwise, enforce HTTPS without trusting that header. Use verified database TLS outside a trusted private network, and expose health probes only to the orchestrator or load balancer. Authentication abuse controls and storage quotas should use a shared Redis/edge policy in a real deployment; an in-process DRF throttle would not be a reliable distributed security boundary.
+When TLS terminates at a reverse proxy, set `DJANGO_TRUST_X_FORWARDED_PROTO=true` only after that proxy is configured to strip client-supplied forwarding headers and set `X-Forwarded-Proto`. Otherwise, enforce HTTPS without trusting that header. Restrict direct API ingress when the deployment tier supports it, use verified database TLS outside a trusted private network, and expose health probes only to the orchestrator or load balancer. Authentication abuse controls and storage quotas should use a shared Redis/edge policy in a real deployment; an in-process DRF throttle would not be a reliable distributed security boundary.
 
 ## Design and scope
 

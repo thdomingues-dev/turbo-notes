@@ -44,11 +44,22 @@ def test_production_rejects_a_weak_secret_key():
     )
 
     assert result.returncode != 0
-    assert "at least 50 characters and 5 unique characters" in result.stderr
+    assert "at least 44 characters and 5 unique characters" in result.stderr
+
+
+def test_production_accepts_a_44_character_generated_secret_key():
+    result = run_settings_probe(
+        production_environment(DJANGO_SECRET_KEY="B0jrphAPOY7pg92AN0c9MN4yecczLMdwnx4OkA1KFUk="),
+        "len(settings.SECRET_KEY)",
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "44"
 
 
 def test_production_accepts_render_generated_hostname():
     environment = production_environment(
+        DJANGO_CSRF_TRUSTED_ORIGINS="https://turbo-notes-web.onrender.com",
         RENDER_EXTERNAL_HOSTNAME="turbo-notes-api.onrender.com",
     )
     environment.pop("DJANGO_ALLOWED_HOSTS")
@@ -60,7 +71,9 @@ def test_production_accepts_render_generated_hostname():
 
     assert result.returncode == 0, result.stderr
     assert result.stdout.strip() == (
-        "(['turbo-notes-api.onrender.com'], ['https://turbo-notes-api.onrender.com'])"
+        "(['turbo-notes-api.onrender.com'], "
+        "['https://turbo-notes-web.onrender.com', "
+        "'https://turbo-notes-api.onrender.com'])"
     )
 
 

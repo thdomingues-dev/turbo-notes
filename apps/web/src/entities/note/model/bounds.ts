@@ -1,0 +1,2 @@
+export const NOTE_TITLE_MAX_LENGTH = 200;
+export const NOTE_CONTENT_MAX_LENGTH = 100_000;

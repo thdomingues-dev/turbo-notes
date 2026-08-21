@@ -1,0 +1,54 @@
+services:
+  - type: web
+    name: turbo-notes-api
+    runtime: docker
+    plan: free
+    region: virginia
+    rootDir: apps/api
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: >-
+      /bin/sh -c 'python manage.py migrate --noinput && exec gunicorn
+      config.wsgi:application --chdir src --bind 0.0.0.0:$PORT
+      --error-logfile=-'
+    healthCheckPath: /health/ready/
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_TRUST_X_FORWARDED_PROTO
+        value: "true"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: turbo-notes-db
+          property: connectionString
+
+  - type: web
+    name: turbo-notes-web
+    runtime: node
+    plan: free
+    region: virginia
+    rootDir: apps/web
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    startCommand: pnpm start
+    healthCheckPath: /login
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: NODE_VERSION
+        value: 24.13.0
+      - key: API_INTERNAL_BASE_URL
+        fromService:
+          type: web
+          name: turbo-notes-api
+          property: hostport
+
+databases:
+  - name: turbo-notes-db
+    plan: free
+    region: virginia
+    postgresMajorVersion: "17"
+    databaseName: turbo_notes
+    user: turbo_notes
+    ipAllowList: []

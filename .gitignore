@@ -1,0 +1,47 @@
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.coverage
+.coverage.*
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.venv/
+htmlcov/
+staticfiles/
+
+# Node / Next.js
+.next/
+.next-*/
+node_modules/
+next-env.d.ts
+out/
+*.tsbuildinfo
+
+# Test and build output
+blob-report/
+build/
+coverage/
+dist/
+playwright-report/
+test-results/
+
+# Runtime files
+*.log
+*.pid
+db.sqlite3
+media/
+tmp/
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json

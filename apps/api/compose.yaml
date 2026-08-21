@@ -1,0 +1,61 @@
+x-api-environment: &api-environment
+  DATABASE_URL: postgresql://turbo_ai:turbo_ai@db:5432/turbo_ai
+  DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+  DJANGO_DEBUG: "true"
+  DJANGO_SECRET_KEY: development-only-change-me
+  DJANGO_SETTINGS_MODULE: config.settings.local
+
+x-api-image: &api-image
+  image: turbo-ai-api:local
+  pull_policy: never
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: turbo_ai
+      POSTGRES_PASSWORD: turbo_ai
+      POSTGRES_USER: turbo_ai
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U turbo_ai -d turbo_ai"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - turbo_ai_postgres_data:/var/lib/postgresql/data
+
+  migrate:
+    <<: *api-image
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment: *api-environment
+    command: ["python", "manage.py", "migrate", "--noinput"]
+
+  api:
+    <<: *api-image
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment: *api-environment
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready/', timeout=2)",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    ports:
+      - "127.0.0.1:8000:8000"
+
+volumes:
+  turbo_ai_postgres_data:

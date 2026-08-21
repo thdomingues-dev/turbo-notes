@@ -97,6 +97,14 @@ pnpm test:fullstack
 
 GitHub Actions runs the backend, frontend, responsive browser, and real full-stack checks.
 
+## Deploy to Render
+
+The committed `render.yaml` Blueprint provisions two free web services and a free PostgreSQL database in the same Render region. The Next.js service forwards same-origin `/api/v1` requests to Django over Render's private network, while Django derives its allowed host and trusted HTTPS origin from Render's generated hostname.
+
+Create a new Blueprint in Render, connect this repository, and apply `render.yaml`. Render generates the Django secret and database credentials automatically. On the free tier, the API runs migrations during service startup because separate pre-deploy commands require a paid service plan.
+
+For a production workload, select paid service and database plans, move migrations to `preDeployCommand`, configure backups and monitoring, and review scaling from measured traffic.
+
 ## Production boundary
 
 Production settings fail closed unless a strong secret, explicit allowed hosts, and a PostgreSQL database URL are supplied. Run migrations as a separate release step before starting Gunicorn. Interactive Swagger documentation is local-only; the committed OpenAPI document remains the reviewable contract.

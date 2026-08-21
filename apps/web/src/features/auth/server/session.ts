@@ -69,7 +69,16 @@ export async function isRequestAuthenticated(): Promise<boolean> {
 export async function redirectAuthenticatedRequest(): Promise<void> {
   const cookie = (await headers()).get("cookie");
   if (!hasSessionCookie(cookie)) return;
-  if ((await getRequestSession()).authenticated) redirect("/notes");
+
+  let session: Session;
+  try {
+    session = await getRequestSession();
+  } catch (error) {
+    console.error("Unable to verify the session for an auth page.", error);
+    return;
+  }
+
+  if (session.authenticated) redirect("/notes");
 }
 
 export async function redirectAnonymousRequest(): Promise<AuthenticatedSession> {

@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   isRequestAuthenticated,
@@ -15,6 +15,10 @@ describe("server session check", () => {
     vi.unstubAllGlobals();
     vi.unstubAllEnvs();
     mockedHeaders.mockReset();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it("forwards request cookies and recognizes an authenticated session", async () => {
@@ -54,6 +58,22 @@ describe("server session check", () => {
 
     await expect(redirectAuthenticatedRequest()).resolves.toBeUndefined();
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("renders auth pages when a stale cookie cannot be verified", async () => {
+    mockedHeaders.mockResolvedValue(
+      new Headers({ cookie: "sessionid=stale-session" }),
+    );
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("API offline")));
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+
+    await expect(redirectAuthenticatedRequest()).resolves.toBeUndefined();
+    expect(consoleError).toHaveBeenCalledWith(
+      "Unable to verify the session for an auth page.",
+      expect.any(Error),
+    );
   });
 
   it("only trusts a verified session response", async () => {

@@ -15,7 +15,7 @@ describe("server session check", () => {
   });
 
   it("forwards request cookies and recognizes an authenticated session", async () => {
-    vi.stubEnv("API_INTERNAL_BASE_URL", "http://api.internal/");
+    vi.stubEnv("API_SERVER_BASE_URL", "http://api.internal/");
     mockedHeaders.mockResolvedValue(
       new Headers({ cookie: "sessionid=session-123; csrftoken=csrf-123" }),
     );

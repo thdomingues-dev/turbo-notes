@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
-import { apiInternalBaseUrl } from "./src/shared/config/api.server";
+import { apiServerBaseUrl } from "./src/shared/config/api.server";
 
-const internalApiBaseUrl = apiInternalBaseUrl();
+const apiBaseUrl = apiServerBaseUrl();
 const distDir = process.env.NEXT_DIST_DIR;
 
 const nextConfig: NextConfig = {
@@ -37,7 +37,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/v1/:path*",
-        destination: `${internalApiBaseUrl}/api/v1/:path*/`,
+        destination: `${apiBaseUrl}/api/v1/:path*/`,
       },
     ];
   },

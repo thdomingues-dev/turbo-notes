@@ -38,7 +38,7 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      command: `NEXT_DIST_DIR=.next-playwright API_INTERNAL_BASE_URL=http://127.0.0.1:8100 pnpm exec next dev --hostname 127.0.0.1 --port ${port}`,
+      command: `NEXT_DIST_DIR=.next-playwright API_SERVER_BASE_URL=http://127.0.0.1:8100 pnpm exec next dev --hostname 127.0.0.1 --port ${port}`,
       url: `http://127.0.0.1:${port}/login`,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,

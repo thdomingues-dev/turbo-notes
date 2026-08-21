@@ -41,7 +41,7 @@ export default defineConfig({
     },
     {
       command:
-        "NEXT_DIST_DIR=.next-fullstack API_INTERNAL_BASE_URL=http://127.0.0.1:8001 pnpm exec next dev --hostname 127.0.0.1 --port 3200",
+        "NEXT_DIST_DIR=.next-fullstack API_SERVER_BASE_URL=http://127.0.0.1:8001 pnpm exec next dev --hostname 127.0.0.1 --port 3200",
       url: `http://127.0.0.1:${webPort}`,
       reuseExistingServer: false,
       timeout: 120_000,

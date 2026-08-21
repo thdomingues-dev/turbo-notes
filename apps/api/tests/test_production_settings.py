@@ -47,6 +47,23 @@ def test_production_rejects_a_weak_secret_key():
     assert "at least 50 characters and 5 unique characters" in result.stderr
 
 
+def test_production_accepts_render_generated_hostname():
+    environment = production_environment(
+        RENDER_EXTERNAL_HOSTNAME="turbo-notes-api.onrender.com",
+    )
+    environment.pop("DJANGO_ALLOWED_HOSTS")
+
+    result = run_settings_probe(
+        environment,
+        "(settings.ALLOWED_HOSTS, settings.CSRF_TRUSTED_ORIGINS)",
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == (
+        "(['turbo-notes-api.onrender.com'], ['https://turbo-notes-api.onrender.com'])"
+    )
+
+
 def test_production_rejects_a_wildcard_allowed_host():
     result = run_settings_probe(
         production_environment(DJANGO_ALLOWED_HOSTS="*"),

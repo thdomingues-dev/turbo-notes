@@ -1,0 +1,11 @@
+.next/
+.next-*/
+coverage/
+node_modules/
+playwright-report/
+test-results/
+public/
+src/shared/api/generated/schema.ts
+next-env.d.ts
+pnpm-lock.yaml
+AGENTS.md

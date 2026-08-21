@@ -1,0 +1,184 @@
+@import "tailwindcss";
+
+@theme static {
+  --color-*: initial;
+  --breakpoint-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+
+  /* Core tokens from the supplied design. */
+  --color-canvas: #faf1e3;
+  --color-heading: #88642a;
+  --color-accent: #957139;
+  --color-accessible-link: #765725;
+  --color-random-thoughts: #ef9c66;
+  --color-school: #fcdc94;
+  --color-personal: #78aba8;
+  --color-drama: #c8cfa0;
+  --color-note-ink: #000000;
+  --color-empty-state: #88642a;
+
+  --font-sans:
+    var(--font-inter), Inter, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  --font-serif: var(--font-inria-serif), Georgia, "Times New Roman", serif;
+  --font-empty-state: var(--font-inter);
+  --text-card-title: 1.5rem;
+  --text-card-copy: 0.75rem;
+  --text-empty-state: 24px;
+
+  --breakpoint-sm: 37.5rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+
+  --radius-control: 6px;
+  --radius-note-card: 11px;
+  --shadow-note-card: 1px 1px 2px rgb(0 0 0 / 25%);
+  --spacing-note-card-height: 246px;
+  --spacing-note-card-border: 3px;
+  --spacing-note-card-padding: 16px;
+  --spacing-note-text-width: 268px;
+  --spacing-note-title-max-height: 145px;
+  --spacing-note-copy-height: 125px;
+  --spacing-notes-grid-gap: 13px;
+  --spacing-sidebar-width: 256px;
+  --spacing-new-note-width: 133px;
+  --spacing-new-note-height: 43px;
+  --spacing-note-title-min-height: 29px;
+  --spacing-auth-form-width: 384px;
+  --spacing-auth-submit-height: 43px;
+  --spacing-empty-art-width: 297px;
+  --spacing-empty-art-height: 296px;
+  --spacing-empty-heading-width: 522px;
+  --spacing-empty-heading-height: 29px;
+
+  --text-card-title--font-weight: 700;
+
+  --animate-loading-spin: loading-spin 700ms linear infinite;
+  --animate-saving-pulse: saving-pulse 900ms ease-in-out infinite alternate;
+
+  @keyframes loading-spin {
+    to {
+      transform: rotate(1turn);
+    }
+  }
+
+  @keyframes saving-pulse {
+    to {
+      opacity: 0.25;
+    }
+  }
+}
+
+:root {
+  /* Operational colors intentionally do not generate utilities. */
+  --color-ink: #281f17;
+  --color-ink-muted: #665a4b;
+  --color-danger: #9d3029;
+  --color-danger-surface: #fff0ec;
+  --color-success: #336c58;
+  --color-accent-interaction: color-mix(
+    in srgb,
+    var(--color-accent) 20%,
+    transparent
+  );
+  --color-ink-placeholder: color-mix(
+    in srgb,
+    var(--color-ink) 72%,
+    transparent
+  );
+  --color-overlay: color-mix(in srgb, var(--color-ink) 28%, transparent);
+  --shadow-category-menu-mobile: 0 -10px 30px
+    color-mix(in srgb, var(--color-ink) 18%, transparent);
+  --shadow-note-card-hover: 2px 3px 5px rgb(0 0 0 / 22%);
+  --shadow-save-error: 0 4px 18px
+    color-mix(in srgb, var(--color-ink) 16%, transparent);
+  color-scheme: light;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    min-width: 320px;
+    background: var(--color-canvas);
+    scroll-behavior: smooth;
+  }
+
+  body {
+    min-width: 320px;
+    min-height: 100svh;
+    margin: 0;
+    overflow-x: hidden;
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.45;
+    text-rendering: optimizelegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  p {
+    margin: 0;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+    font-weight: 700;
+  }
+
+  button,
+  input,
+  textarea {
+    font: inherit;
+  }
+
+  button,
+  a,
+  input,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  [data-auth-input]:-webkit-autofill,
+  [data-auth-input]:-webkit-autofill:hover,
+  [data-auth-input]:-webkit-autofill:focus,
+  [data-auth-input]:autofill {
+    -webkit-box-shadow: 0 0 0 1000px var(--color-canvas) inset;
+    box-shadow: 0 0 0 1000px var(--color-canvas) inset;
+    caret-color: var(--color-note-ink);
+    -webkit-text-fill-color: var(--color-note-ink);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-ink);
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-accent) 25%, transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+}
+
+@layer utilities {
+  .card-copy-clamp {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 10;
+  }
+}

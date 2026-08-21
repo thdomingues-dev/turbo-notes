@@ -30,6 +30,14 @@ function isSessionPayload(payload: unknown): payload is Session {
     : payload.authenticated === false && payload.user === null;
 }
 
+function hasSessionCookie(cookie: string | null): boolean {
+  return (
+    cookie
+      ?.split(";")
+      .some((part) => part.trimStart().startsWith("sessionid=")) ?? false
+  );
+}
+
 export async function getRequestSession(): Promise<Session> {
   const cookie = (await headers()).get("cookie");
   const response = await fetch(`${apiServerBaseUrl()}/api/v1/auth/session/`, {
@@ -59,6 +67,8 @@ export async function isRequestAuthenticated(): Promise<boolean> {
 }
 
 export async function redirectAuthenticatedRequest(): Promise<void> {
+  const cookie = (await headers()).get("cookie");
+  if (!hasSessionCookie(cookie)) return;
   if ((await getRequestSession()).authenticated) redirect("/notes");
 }
 

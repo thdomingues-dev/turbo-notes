@@ -1,7 +1,10 @@
 import { headers } from "next/headers";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { isRequestAuthenticated } from "@/features/auth/server/session";
+import {
+  isRequestAuthenticated,
+  redirectAuthenticatedRequest,
+} from "@/features/auth/server/session";
 
 vi.mock("next/headers", () => ({ headers: vi.fn() }));
 
@@ -42,6 +45,15 @@ describe("server session check", () => {
         },
       },
     );
+  });
+
+  it("renders auth pages without calling the API when no session cookie exists", async () => {
+    mockedHeaders.mockResolvedValue(new Headers());
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(redirectAuthenticatedRequest()).resolves.toBeUndefined();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("only trusts a verified session response", async () => {

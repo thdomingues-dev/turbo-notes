@@ -2,6 +2,10 @@
 
 Turbo Notes is a full-stack notes application for organizing and editing personal notes. Users can create an account, organize notes in four fixed categories, filter the notes grid, and edit with autosave.
 
+**Live demo:** [turbo-notes-web.onrender.com](https://turbo-notes-web.onrender.com/)
+
+> The demo runs on Render's free tier, so the first request after inactivity can take about a minute while the services wake up.
+
 ![Notes grid](docs/evidence/web-notes-1280x832.png)
 
 ![Note editor](docs/evidence/web-note-editor-1280x832.png)
